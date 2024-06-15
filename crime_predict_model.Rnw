@@ -1,0 +1,435 @@
+% File SDSS2020_SampleExtendedAbstract.tex
+\documentclass[10pt]{article}
+\usepackage[margin = 1in]{geometry}
+%\usepackage{sdss2020} % Uses Times Roman font (either newtx or times package)
+\usepackage{url}
+\usepackage{latexsym}
+\usepackage{amsmath, amsthm, amsfonts}
+\usepackage{algorithm, algorithmic}  
+\usepackage{graphicx,setspace}
+\usepackage{natbib}
+\usepackage{indentfirst}
+\setlength{\parskip}{8pt}
+
+\title{MATH 454 (Spring 2024) Midterm Exam 1}
+
+\author{
+  Jennifer Nguyen Do Ha\\
+  {\tt tnguyendoha@colgate.edu}}
+  
+\date{}
+
+\begin{document}
+\SweaveOpts{concordance=TRUE}
+\maketitle
+
+\section{Introduction}
+
+CrimeData\_train and CrimeData\_test\_X present comprehensive socio-economic and criminal justice information from 1,994 communities across the US in the 1990s by combining data from various resources, specifically the 1990 US Census data, the 1990 Law Enforcement Management and Administrative Statistics data, and the 1995 FBI Uniform Crime Reporting data. CrimeData\_train includes 125 predictors and the response from 1,794 out of the 1,994 communities; this is the dataset we will be fitting our predictive regression models on. CrimeData\_test\_X includes 125 predictors without the response for the remaining 200 communities. We will be using our final model to predict the violent crime rate in these 200 communities.
+
+Our main goal is to choose a regression model most accurately predicts violent crime rates. Our secondary goal is to make our model an interpretable one, meaning it helps us identify the most significant predictors of crime rates, or the factors that have the greatest impact on crime rates. 
+
+Several challenges are presented by these datasets, including (1) missing data, (2) potential multicollinearity between certain variables and (3) complexity due to the large number of variables (p=125). To address the first two issues, we will pre-process the data before fitting the model to handle the NA values and the multicollinearity. And to address the third problem, we will use ridge regression, lasso regression, and principle component (PC) regression to reduce the risk of overfitting. Ridge regression does so by shrinking coefficients of less important predictors, lasso regression does so by variable selection (as it can shrink certain coefficients to zero), and PC regression does so by reducing the number of predictor variables to a smaller set of principal components. We will fit all these three regression models on the training data, then use cross-validation to compute their respective prediction errors. The model with the smallest prediction error will be chosen as the final predictive model.
+
+
+\section{Methods}
+
+\subsection{Ridge Regression}
+RStudio provides built-in funcion glmnet() in library(glmnet) that performs ridge regression and cv.glmnet() that identifies the optimal lambda using 10-fold CV. The model equation for Ridge Regression is given by
+$$
+  \hat{y}=\beta_0 + \beta_1 x_1+ \beta_2 x_2 + ...+ \beta_{p} x_{p}
+$$
+
+$\hat{y}$ is the predicted value of the response variable
+
+$x_1, x_2, ... x_{p}$ are the independent (predictor) variables
+
+$\beta_0, \beta_1, ...,\beta_{p}$ are the coefficients that minimizes the residual sum of squares (RSS) and the penalty 
+$$
+  \hat{\beta}^{ridge}= arg min_{\beta} \sum_{i=1}^n (y_i-\beta_0-\sum_{j=1}^p \beta_j x_{ij})^2 +\lambda \sum_{j=1}^p \beta_j^2
+$$
+
+, where $\lambda$ is the hyperparameter of cost for larger models (larger values of $\lambda$ shrink the coefficients towards 0, but none of them are exactly 0).
+
+
+\subsection{Lasso Regression}
+RStudio provides built-in funcion glmnet() in library(glmnet) that performs lasso regression and cv.glmnet() that identifies the optimal lambda using 10-fold CV. The model equation for Ridge Regression is given by
+$$
+  \hat{y}=\beta_0 + \beta_1 x_1+ \beta_2 x_2 + ...+ \beta_{p} x_{p}
+$$
+
+$\hat{y}$ is the predicted value of the response variable
+
+$x_1, x_2, ... x_{p}$ are the independent (predictor) variables
+
+$\beta_0, \beta_1, ...,\beta_{p}$ are the coefficients that minimizes the RSS and the penalty. The difference from ridge regression is that the penalty is applied to the absolute value of each coefficient. 
+$$
+  \hat{\beta}^{lasso} = arg min_{\beta} \sum_{i=1}^n(y_i-\beta_0-\sum_{j=1}^p \beta_j x_{ij})^2+\lambda\sum_{j=1}^p|\beta_j|
+$$
+
+, where $\lambda$ is the hyperparameter of cost for larger models (large values of $\lambda$ can shrink some coefficients to exactly 0).
+
+
+\subsection{Principal Component Regression}
+RStudio provides built-in funcion pcr() in library(pls) that performs ridge regression and cv.glmnet() that helps us choose the best number of principal components to keep.The model equation for Principal Component Regression is given by
+$$
+  \hat{y} = \hat{\beta_0} + \hat{\beta_1}Z_1+\hat{\beta_2}Z_2+...\hat{\beta_j}Z_{j}
+$$
+
+$\hat{y}$ is the predicted value of the response variable
+
+$Z_1, Z_2, ..., Z_{j}$ are the principal components
+$$
+  Z_j = X w_j = \sum_{k=1}^{p} w_{kj}x_k
+$$
+
+, where $w_{j}$ is an eigenvector of cov(X) associated with the $j^{th}$ largest eigenvalue. Note that we also need to standardize predictor variables $X_1, X_2, ...,X_{p}$ to have mean 0 and variance 1.
+
+\subsection{Cross-Validation (CV)}
+
+\subsubsection{5-fold CV for model comparison}
+We divide the observations in the training data into k=5 folds of approximately equal size. We will treat the first fold as the testing set, and the remaining 4 folds as the training set. After fitting the regression model on the training set, we will use this fitted model to predict on the testing set and compute the mean squared error between the observed responses and the predicted responses. 
+
+After repeating the above process k=5 times, we compute the 5-fold CV estimate by averaging the mean squared errors.
+$$
+  CV_{(k)} = \frac{1}{k} \sum_{i=1}^k MSE_{i}
+$$
+Finally, the regression model with the lowest average MSE will be chosen as the final predictive model.
+
+\subsubsection{10-fold CV for choosing lambda}
+First, we create a grid of $\lambda$ values to evaluate. We will treat the first fold as the testing set, and the remaining 9 folds as the training set. After fitting the model on the training set using a given $\lambda$ value from the grid, we will use this fitted model to predict on the testing set and compute the mean squared error (MSE) between the observed responses and the predicted responses.
+
+We repeat this 10-fold CV process for each $\lambda$ value in the grid. For each $\lambda$, we compute its 10-fold CV estimate by averaging the MSEs obtained from the 10-fold CV process. 
+$$
+  CV_{(k)} = \frac{1}{k} \sum_{i=1}^k MSE_{i}
+$$
+Finally, we will select the $\lambda$ with the lowest average MSE as the optimal $\lambda$ for the model. Using this optimal $\lambda$, we will fit the model on the dataset to obtain its coefficients. 
+
+\section{Results}
+
+\subsubsection{Description of the data set}
+
+A bar plot of the response variable (violentCrimesPerPop) reveals that the distribution of the response variable (violentCrimesPerPop) is heavily right-skewed, and log-transforming makes the data more closely resemble a normal distribution. This suggests that log-transforming the data may make it more suitable for fitting the regression models. 
+
+<<echo=FALSE, fig=TRUE>>=
+library(glmnet)
+library(dplyr)
+library(pls)
+library(ggplot2)
+library(gridExtra)
+
+train_data <- read.csv('CrimeData_train.csv')
+test_data <- read.csv('CrimeData_test_X.csv')
+
+p4 <- ggplot(train_data, aes(x=violentCrimesPerPop)) +
+  geom_histogram(binwidth = 1, color = "black") +
+  labs(title = "Violent Crimes Per Pop")
+
+p5 <- ggplot(train_data, aes(x=log(violentCrimesPerPop))) +
+  geom_histogram(binwidth = 1, color = "black") +
+  labs(title = "Log of Violent Crimes Per Pop")
+
+grid.arrange(p4, p5, ncol = 2)
+@
+
+
+\subsubsection{Data pre-processing}
+
+First, we remove columns 100 to 125, as 85\% of the data in these columns are NA values. Then, we need to remove columns 84 and 88, as column 84 is derived from columns 81 and 83, and column 88 is derived from columns 85 and 87, so doing this will handle the problem of multicollinearity. We go on to remove any remaining NA value in the training data, as there is still 1 singular NA values left in the training data after removing columns 100 to 125. We also remove column 1 of the categorical variable STATE, as fitting the three regression models on the data with and without this column revealed that there is no significant change in the calculated error. 
+
+
+\subsubsection{Model comparison}
+For each of the three regression models, we use 5-fold cross validation to compute their respective Mean Squared Errors. After repeating 5 times the process of fitting each model on 4 folds and testing on the remaining fold, we average the obbtained MSEs to get their CV estimates. The model with the lowest error out of the three is Lasso Regression, so we choose  Lasso Regression as our final model to predict the number of violent crimes. 
+
+
+\subsubsection{Final model: Lasso Regression (PCR)}
+First, we pre-process testing data by following similar steps as we did to pre-process the training data for consistency. We will remove columns 100 to 125, columns 84 and 88, any remaining NA value, and column 1 (STATE). Then, we fit the Lasso Regression model on the entire training data with the optimal $\lambda$ chosen by 10-fold CV using cv.glmnet(). And with the chosen optimal $\lambda$, we will use fitted the Lasso Regression model to predict the number of violent crimes. 
+
+<<echo=FALSE>>=
+# Train Data Pre-processing
+cols_NA <- names(train_data)[100:125]
+cols_multicollinear <- names(train_data)[c(84,88)] 
+cols_remove <- c(cols_NA, cols_multicollinear)
+train_data <- train_data %>% select(-one_of(cols_remove))
+train_data <- train_data[,-1] # remove STATE column (categorical variable)
+train_data <- na.omit(train_data) # remove remaining NA values
+
+x.train.full <- model.matrix(violentCrimesPerPop ~ ., data=train_data)[,-1]
+y.train.full <- train_data$violentCrimesPerPop
+
+# Fit lasso regression model on entire training data, best lambda chosen by 10-fold CV
+lambda.grid = exp(seq(-8,8,by=.01))
+lasso.fit.full <- glmnet(x=x.train.full, y=y.train.full, alpha=1, lambda=lambda.grid)
+lasso.cv.full <- cv.glmnet(x=x.train.full, y=y.train.full, alpha=1)
+lasso.lambda <- lasso.cv.full$lambda.min
+
+# Test Data Pre-processing 
+cols_NA <- names(test_data)[100:125] 
+cols_multicollinear <- names(test_data)[c(84,88)] 
+cols_remove <- c(cols_NA, cols_multicollinear)
+test_data <- test_data %>% select(-one_of(cols_remove))
+test_data <- test_data[,-1] # remove STATE column (categorical variable)
+test_data <- na.omit(test_data)
+
+# Generate predictions
+x.test.full <- model.matrix(~., data=test_data)[,-1]
+lasso.predict.full <- predict(lasso.fit.full, s=lasso.lambda, newx=x.test.full)
+@
+
+The results from the final fitted Lasso regression model indicate that certain predictors have been selected as significant in predicting the outcome variable (\textbf{Figure 1}). Among these, predictors with negative coefficients include "racePctWhite", "pctKids2Par", "pctWorkMom", "pctHousOccup". And predictors with positive coefficients include "pctUrban", "MalePctDivorce", "pctKidsBornNevrMar", "houseVacant", and "pctVacantBoarded".
+
+<<echo=FALSE>>=
+cat("Figure 1: Coefficients from Lasso Model\n")
+coef(lasso.fit.full, s=lasso.lambda)
+@
+
+The optimal value of $\lambda$ for our model minimizes the MSE. The corresponding number of non-zero coefficients at this value of lambda is the number of chosen predictors in our final model (\textbf{Figure 2}). This plot also shows the tradeoff between bias and variance. The number of non-zero coefficients reduces as lambda increases, so lambda that is too small can cause overfitting, while lambda that is too large leads to underfitting. 
+
+<<echo=FALSE, fig=TRUE>>=
+plot(lasso.cv.full, main="Figure 2: Cross-Validation Curve for Choosing Lambda")
+@
+
+This Lasso coefficient path (\textbf{Figure 3}) plot shows the regularization effect as $\lambda$ increases, more coefficients are shrunk toward zero. It's worth noticing that a large number of coefficients are quickly shrunk to zero, indicating that these variables are less significant in predicting the response. Only a few coefficients remain non-zero even at higher values of lambda - these are potentially significant predictors.
+
+<<echo=FALSE,fig=TRUE>>=
+plot(lasso.fit.full, xvar = "lambda", label = TRUE, main="Figure 3: Coefficient Paths for Lasso Regression")
+@
+
+This predictor and coefficient bar plot (\textbf{Figure 4}) shows the statistically significant predictors chosen by our model on the y-axis and their associated coefficients on the x-axis. Among predictors with the largest positive coefficients are "pctKidsBornNevrMar", "MalePctDivorce", and "pctVacantBoarded". On the other hand, among predictors with the largest negative coefficients are "medOwnCostPctNoMtg" and "pctKid2Par". This means that areas with a higher percentage of children born to never-married parents/ higher percentage of males who are divorced, and higher percentage of vacant houses that are boarded up might be associated with higher violent crime rates. On the other hand, areas where a larger proportion of owners have no mortgage and a larger percentage of kids live in family housing with two parents may be associated with lower violent crime rates. 
+
+<<echo=FALSE, fig=TRUE>>=
+# Extract coefficients 
+lasso.coef <- coef(lasso.fit.full, s = lasso.lambda)
+coef_df <- as.data.frame(as.matrix(lasso.coef))
+coef_df <- coef_df %>% filter(s1 != 0) #remove coeffs shrunk to 0
+coef_df <- coef_df[-1, , drop = FALSE] #remove intercept
+coef_df$Predictor = rownames(coef_df)
+colnames(coef_df)[1] <- "Coefficient"
+
+print(
+ ggplot(coef_df, aes(x = reorder(Predictor, Coefficient), y = Coefficient)) +
+  geom_bar(stat = "identity") +
+  coord_flip() +  
+  labs(title = "Figure 4: Most Significant Predictors",
+       x = "Predictor",
+       y = "Coefficient") +
+  geom_hline(yintercept = 0, color = "red")
+)
+@
+
+\section{Discussion}
+
+\subsubsection*{Recap}
+The final regression model we use to predict the number of violent crimes is a Lasso Regression model. The model is chosen after comparing with ridge regression and principal component regression for its predictive accuracy and interpretability. The optimal hyperparameter $\lambda$ is chosen through 10-fold cross-validation to minimize the mean squared error. 
+
+\subsubsection*{Meaningful Insights}
+The model highlights several predictors that significantly impact the response variable. Notably, \textbf{figure 3} shows that variables "pctKidBornNevrMar" (percentage of kids born to never married), "MalePctDivorce" (percentage of males who are divorced), "pctVacantBoarded" (percent of vacant housing that is boarded up) have the largest positive coefficients. And variables such as "medOwnCostPctNoMtg" (median owners cost as a percentage of household income - for owners with no mortgage), pctKids2Par (percentage of kids in family housing with two parents) have the largest negative coefficients. These are among the predictors that have the most significant impact on the prediction of the number of violent crimes.
+
+These predictors chosen by our Lasso model seem to reflect demographic, socioeconomic factors that influence the outcome variable that is violent crimes. Variables related to family structure, urbanization, and housing conditions appear to stand out as significant predictors. Particularly, the model suggests that areas with urbanization, socioeconomic challenges (e.g., higher percentages of children born to never-married mothers, divorced males) and indicators of economic decline (e.g., vacant houses that are boarded up) are associated with higher violent crimes. Meanwhile, indicators of socioeconomic stability (e.g., higher percentages of two-parent families, housing occupancy) are associated with lower violent crimes. 
+
+\subsubsection*{Model Limitations}
+First, since our model is Lasso regression, it is essentially a linear regression model and relies on several assumptions (linearity, independence, homoscedasticity, and normality of residuals), which might not have been satisfied. For example, the assumption of homoscedatictity is not satisfied. When plotted against fitted values, the residuals pattern seem to be a cone shape (\textbf{Figure 5}), meaning the residuals are not randomly scattered around the horizontal line. Additionally, the residuals also do not appear to be normally distributed (\textbf{Figure 6}). Since these assumptions are violated, this can lead to inaccurate results.
+
+<<echo=FALSE, fig=TRUE>>=
+par(mfrow = c(1,2))
+fitted_values <- predict(lasso.fit.full, s = lasso.lambda, newx = x.train.full)
+residuals <- y.train.full - fitted_values
+
+plot(fitted_values, residuals, xlab = "Fitted Values", ylab = "Residuals", main = "Figure 5: Residual Plot")
+abline(h = 0, col = "red")
+
+qqnorm(residuals, main = "Figure 6: Q-Q Plot of Residuals")
+qqline(residuals, col="red")
+
+par(mfrow = c(1,1))
+@
+
+Second, our Lasso model can identify significant variables that predict the outcome variable, but it does not imply causal relationships. This means that our model cannot be used for causal predictions. Last but not least, our data-preprocessing process involved removing NA values, which may have caused our regression model to suffer from omitted variables if important predictors are not included in the dataset. 
+
+\subsubsection*{Future Work}
+Even though the identified relationships between violent crimes and its predictors provide meaningful insights into the underlying patterns in the data, these associations are not necessarily causal relationships. Future work can consider conducting studies to understand the causal effects of these identified predictors on crimes rates. We can also consider conducting studies to evaluate existing policies that target the identified predictors, such as urban development projects or family support programs, to evaluate the potential impact of policy changes on crime rates. 
+
+
+\section{Reference}
+\begin{enumerate}
+  \item (Textbook) An Introduction To Statistical Learning (with Applications in R)
+  \item (Lecture Slides) Lecture 8, Lecture 9
+\end{enumerate}
+\clearpage
+
+\section*{Appendix. R Code}
+
+<<>>=
+library(glmnet)
+library(dplyr)
+library(pls)
+
+
+train_data <- read.csv('CrimeData_train.csv')
+test_data <- read.csv('CrimeData_test_X.csv')
+
+
+# Data Pre-processing
+cols_NA <- names(train_data)[100:125] # remove columns where most data is NA
+cols_multicollinear <- names(train_data)[c(84,88)] # remove multicollinearity
+cols_remove <- c(cols_NA, cols_multicollinear)
+train_data <- train_data %>% select(-one_of(cols_remove))
+train_data <- train_data[,-1] # remove STATE column (categorical variable)
+train_data <- na.omit(train_data) # remove remaining NA values
+
+# Create folds for 5-fold Cross Validation to compute error of models
+set.seed(1)
+fold.size <- floor(nrow(train_data)/5)
+folds <- seq(1, nrow(train_data), by=fold.size)
+train_randomized <- sample(1:nrow(train_data), nrow(train_data))
+
+
+# RIDGE REGRESSION
+ridge.MSEs <- rep(NA, 5)
+
+for (i in 1:5){
+  # Update training set and testing set
+  test.idx <- seq(from=folds[i], to=folds[i+1])
+  test.idx <- train_randomized[test.idx]
+  train.idx <- setdiff(1:nrow(train_data), test.idx)
+  test <- train_data[test.idx,]
+  train <- train_data[train.idx,]
+
+  x.train <- model.matrix(violentCrimesPerPop ~ ., data=train)[,-1]
+  y.train <- train$violentCrimesPerPop
+  x.test <- model.matrix(violentCrimesPerPop ~ ., data=test)[,-1]
+  y.test <- test$violentCrimesPerPop
+
+  # Fit ridge regression model on training set, best lambda chosen by 10-fold CV
+  lambda.grid = exp(seq(-8,8,by=.01))
+  ridge.fit <- glmnet(x=x.train,y=y.train,alpha=0, lambda=lambda.grid)
+  ridge.cv <- cv.glmnet(x=x.train, y=y.train, alpha=0)
+  ridge.lambda <- ridge.cv$lambda.min
+  
+  # Use model to predict on testing set, compute squared error
+  ridge.predict <- predict(ridge.fit, s=ridge.lambda, newx=x.test)
+  ridge.predict <- ridge.predict[,1]
+  ridge.MSEs[i] <- mean((y.test-ridge.predict)^2)
+}
+ridge.MSE <- mean(ridge.MSEs)
+
+
+# LASSO REGRESSION
+lasso.MSEs <- rep(NA, 5)
+
+for (i in 1:5){
+  # Update training set and testing set
+  test.idx <- seq(from=folds[i], to=folds[i+1])
+  test.idx <- train_randomized[test.idx]
+  train.idx <- setdiff(1:nrow(train_data), test.idx)
+  test <- train_data[test.idx,]
+  train <- train_data[train.idx,]
+
+  x.train <- model.matrix(violentCrimesPerPop ~ ., data=train)[,-1]
+  y.train <- train$violentCrimesPerPop
+  x.test <- model.matrix(violentCrimesPerPop ~ ., data=test)[,-1]
+  y.test <- test$violentCrimesPerPop
+
+  # Fit lasso regression model on training set, best lambda chosen by 10-fold CV
+  lambda.grid = exp(seq(-8,8,by=.01))
+  lasso.fit <- glmnet(x=x.train,y=y.train,alpha=1, lambda=lambda.grid)
+  lasso.cv <- cv.glmnet(x=x.train, y=y.train, alpha=1)
+  lasso.lambda <- lasso.cv$lambda.min
+  
+  # Use model to predict on testing set, compute squared error
+  lasso.predict <- predict(lasso.fit, s=lasso.lambda, newx=x.test)
+  lasso.predict <- lasso.predict[,1]
+  lasso.MSEs[i] <- mean((y.test-lasso.predict)^2)
+}
+lasso.MSE <- mean(lasso.MSEs)
+
+
+# PRINCIPAL COMPONENT REGRESSION
+pcr.MSEs <- rep(NA, 5)
+
+for (i in 1:5){
+  # Update training set and testing set
+  test.idx <- seq(from=folds[i], to=folds[i+1])
+  test.idx <- train_randomized[test.idx]
+  train.idx <- setdiff(1:nrow(train_data), test.idx)
+  test <- train_data[test.idx,]
+  train <- train_data[train.idx,]
+
+  x.train <- model.matrix(violentCrimesPerPop ~ ., data=train)[,-1]
+  y.train <- train$violentCrimesPerPop
+  x.test <- model.matrix(violentCrimesPerPop ~ ., data=test)[,-1]
+  y.test <- test$violentCrimesPerPop
+
+  # Fit PCR regression model on training set, best number of PCs is approx 22
+  pcr.fit = pcr(violentCrimesPerPop ~ ., data = train, scale = TRUE, validation = "CV")
+  
+  # Use model to predict on testing set, compute squared error
+  pcr.predict = predict(pcr.fit, newdata = test, ncomp = 22)
+  pcr.MSEs[i] <- mean((y.test-pcr.predict)^2)
+}
+pcr.MSE <- mean(pcr.MSEs)
+
+ridge.MSE
+lasso.MSE
+pcr.MSE
+@
+
+Now that we have chosen lasso regression as our prediction model, below is the code for predicting the number of violent crimes in test data
+
+<<>>=
+x.train.full <- model.matrix(violentCrimesPerPop ~ ., data=train_data)[,-1]
+y.train.full <- train_data$violentCrimesPerPop
+
+# Fit lasso regression model on entire training data, best lambda chosen by 10-fold CV
+lambda.grid = exp(seq(-8,8,by=.01))
+lasso.fit.full <- glmnet(x=x.train.full,y=y.train.full,alpha=1, lambda=lambda.grid)
+lasso.cv.full <- cv.glmnet(x=x.train.full, y=y.train.full, alpha=1)
+lasso.lambda <- lasso.cv.full$lambda.min
+
+# Prepare test_data
+cols_NA <- names(test_data)[100:125] # remove columns where most data is NA
+cols_multicollinear <- names(test_data)[c(84,88)] # remove multicollinearity
+cols_remove <- c(cols_NA, cols_multicollinear)
+test_data <- test_data %>% select(-one_of(cols_remove))
+test_data <- test_data[,-1] # remove STATE column (categorical variable)
+test_data <- na.omit(test_data)
+
+# Generate predictions
+x.test.full <- model.matrix(~., data=test_data)[,-1]
+lasso.predict.full <- predict(lasso.fit.full, s=lasso.lambda, newx=x.test.full)
+write.csv(lasso.predict.full, file = "finalPredictions.csv")
+@
+
+<<>>=
+plot(lasso.cv.full)
+title("Figure 1: Cross-Validation Curve for Choosing Lambda")
+@
+
+<<>>=
+plot(lasso.fit.full, xvar = "lambda", label = TRUE)
+title("Figure 2: Coefficient Paths for Lasso Regression")
+@
+
+<<>>=
+# Extract coefficients 
+lasso.coef <- coef(lasso.fit.full, s = lasso.lambda)
+coef_df <- as.data.frame(as.matrix(lasso.coef))
+coef_df <- coef_df %>% filter(s1 != 0) #remove coeffs that are shrunk to 0
+coef_df <- coef_df[-1, , drop = FALSE] #remove intercept
+coef_df$Predictor = rownames(coef_df)
+colnames(coef_df)[1] <- "Coefficient"
+
+library(ggplot2)
+print(
+ ggplot(coef_df, aes(x = reorder(Predictor, Coefficient), y = Coefficient)) +
+  geom_bar(stat = "identity") +
+  coord_flip() +  
+  labs(title = "Figure 3: Most Significant Predictors",
+       x = "Predictor",
+       y = "Coefficient") +
+  geom_hline(yintercept = 0, color = "red")
+)
+@
+
+
+\end{document}
