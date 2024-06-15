@@ -1,4 +1,4 @@
-#**Predictive Model for Violent Crime Rates**
+# **Predictive Model for Violent Crime Rates**
 
 Our main goal is to choose a regression model most accurately predicts violent crime rates. Our secondary
 goal is to make our model an interpretable one, meaning it helps us identify the most signicant predictors
